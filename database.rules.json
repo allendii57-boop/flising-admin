@@ -1,0 +1,16 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    "admins": { ".write": false },
+    "drivers": { ".write": "auth != null" },
+    "passengers": { ".write": "auth != null" },
+    "users": { ".write": "auth != null" },
+    "rides": {
+      ".indexOn": ["assignedDriverId", "status", "passengerId"],
+      ".write": "auth != null"
+    },
+    "chats": { ".write": "auth != null" },
+    "chat_images": { ".write": "auth != null" },
+    "passenger_profiles": { ".write": "auth != null" }
+  }
+}
