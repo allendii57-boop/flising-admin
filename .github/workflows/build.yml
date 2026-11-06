@@ -1,31 +1,63 @@
-name: Build Admin APK
+name: Build Admin APK & Windows EXE
 
 on:
   push:
     branches: [ "main" ]
     tags: [ "v*.*.*" ]
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  build_android:
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Build APK
-        run: flutter build apk --release
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      - name: Generate Android folder & build APK
+        run: |
+          flutter create --platforms=android --org com.flising.admin --project-name flising_admin .
+          sed -i '/<application/i <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
+          flutter pub get
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk Flising-Admin.apk
+      - uses: actions/upload-artifact@v4
         with:
-          name: flising-admin-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: Flising-Admin-APK
+          path: Flising-Admin.apk
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Flising-Admin.apk
+
+  build_windows:
+    name: Build Windows EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - name: Generate Windows folder & build EXE
+        shell: pwsh
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --platforms=windows --project-name flising_admin .
+          flutter pub get
+          flutter build windows --release
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath Flising-Admin-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Flising-Admin-Windows-EXE
+          path: Flising-Admin-Windows.zip
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Flising-Admin-Windows.zip
