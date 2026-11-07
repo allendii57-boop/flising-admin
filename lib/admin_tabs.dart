@@ -183,10 +183,9 @@ class _AdminHomeState extends State<AdminHome> {
             trailing: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: kOrange),
               onPressed: () => _driverDetailDialog(uid, d),
-            ),
-            onTap: () => _driverDetailDialog(uid, d
               child: const Text('PROFILE', style: TextStyle(color: Colors.white, fontSize: 12)),
             ),
+            onTap: () => _driverDetailDialog(uid, d),
           ),
         );
       },
