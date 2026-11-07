@@ -250,7 +250,7 @@ class _AdminGateState extends State<AdminGate> {
   Widget build(BuildContext context) {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator(color: kOrange)));
     if (_token != null && _uid != null) {
-      return AdminHome(token: _token!, refreshToken: _refresh ?? '', onLogout: _logout);
+      return AdminHome(token: _token!, refreshToken: _refresh ?? '', adminEmail: _emailCtrl.text.trim(), onLogout: _logout);
     }
     return Scaffold(
       body: Center(
