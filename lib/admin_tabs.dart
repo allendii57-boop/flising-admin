@@ -106,8 +106,10 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _stat(String label, String val, Color col) {
-    return Container(
+  Widget _stat(String label, String val, Color col, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       width: 170,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: kSurface, borderRadius: BorderRadius.circular(10), border: Border(top: BorderSide(color: col, width: 3))),
@@ -116,7 +118,7 @@ class _AdminHomeState extends State<AdminHome> {
         const SizedBox(height: 6),
         Text(val, style: TextStyle(color: col, fontSize: 20, fontWeight: FontWeight.bold)),
       ]),
-    );
+    ));
   }
 
   // ================= DASHBOARD TAB =================
@@ -135,12 +137,12 @@ class _AdminHomeState extends State<AdminHome> {
     final online = dList.where((d) => d['isOnline'] == true).length;
     return ListView(padding: const EdgeInsets.all(16), children: [
       Wrap(spacing: 10, runSpacing: 10, children: [
-        _stat('TODAY GROSS', 'K ${today.toStringAsFixed(2)}', kGreen),
-        _stat('FLISING 10%', 'K ${(today * 0.1).toStringAsFixed(2)}', kOrange),
-        _stat('ONLINE DRIVERS', '$online / ${dList.length}', kGreen),
-        _stat('PENDING DRIVERS', '$pending', pending > 0 ? kRed : Colors.white54),
-        _stat('TOTAL RIDES', '${rList.length}', Colors.white),
-        _stat('PASSENGERS', '${_passengers.length}', Colors.white70),
+        _stat('TODAY GROSS', 'K ${today.toStringAsFixed(2)}', kGreen, onTap: () => setState(() => _tab = 5)),
+        _stat('FLISING 10%', 'K ${(today * 0.1).toStringAsFixed(2)}', kOrange, onTap: () => setState(() => _tab = 5)),
+        _stat('ONLINE DRIVERS', '$online / ${dList.length}', kGreen, onTap: () => setState(() => _tab = 1)),
+        _stat('PENDING DRIVERS', '$pending', pending > 0 ? kRed : Colors.white54, onTap: () => setState(() => _tab = 1)),
+        _stat('TOTAL RIDES', '${rList.length}', Colors.white, onTap: () => setState(() => _tab = 3)),
+        _stat('PASSENGERS', '${_passengers.length}', Colors.white70, onTap: () => setState(() => _tab = 4)),
       ]),
     ]);
   }
@@ -181,6 +183,8 @@ class _AdminHomeState extends State<AdminHome> {
             trailing: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: kOrange),
               onPressed: () => _driverDetailDialog(uid, d),
+            ),
+            onTap: () => _driverDetailDialog(uid, d
               child: const Text('PROFILE', style: TextStyle(color: Colors.white, fontSize: 12)),
             ),
           ),
@@ -237,7 +241,7 @@ class _AdminHomeState extends State<AdminHome> {
                 const Divider(color: Colors.white12, height: 24),
                 Text('ALL-TIME HISTORY (${driverRides.length} trips)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(height: 6),
-                ...driverRides.take(5).map((e) {
+                ...driverRides.map((e) {
                   final r = e.value as Map;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 4),
@@ -298,7 +302,11 @@ class _AdminHomeState extends State<AdminHome> {
           width: 50,
           height: 50,
           child: GestureDetector(
-            onTap: () => _driverDetailDialog(uid, val),
+            onTap: () {
+              final dMap = val.cast<String, dynamic>();
+              setState(() => _tab = 1);
+              Future.microtask(() => _driverDetailDialog(uid, dMap));
+            },
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -309,6 +317,37 @@ class _AdminHomeState extends State<AdminHome> {
               child: photo.isNotEmpty
                   ? Image.network(photo, fit: BoxFit.cover)
                   : const Icon(Icons.directions_car, color: Colors.white, size: 24),
+            ),
+          ),
+        ));
+      }
+    });
+
+    // Add passengers ONLY when ride is IN_PROGRESS (driver tapped Pickup Passenger)
+    _rides.forEach((rideId, rVal) {
+      if (rVal is! Map || rVal['status'] != 'IN_PROGRESS') return;
+      final dId = rVal['assignedDriverId']?.toString();
+      final dObj = dId != null ? _drivers[dId] : null;
+      final lat = (dObj is Map && dObj['latitude'] is num) ? dObj['latitude'] : rVal['pickupLat'];
+      final lng = (dObj is Map && dObj['longitude'] is num) ? dObj['longitude'] : rVal['pickupLng'];
+      if (lat is num && lng is num) {
+        final pName = (rVal['passengerName'] ?? 'Passenger').toString();
+        markers.add(Marker(
+          point: LatLng(lat.toDouble() + 0.00035, lng.toDouble() + 0.00035),
+          width: 110,
+          height: 54,
+          child: GestureDetector(
+            onTap: () => setState(() => _tab = 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: kGreen, borderRadius: BorderRadius.circular(6)),
+                  child: Text('🧑 $pName', overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                ),
+                const Icon(Icons.person_pin_circle, color: kGreen, size: 30),
+              ],
             ),
           ),
         ));
