@@ -21,18 +21,13 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - name: Generate Android folder & build APK
+      - name: Generate Android folder, set Name & Icon, and build APK
         run: |
           flutter create --platforms=android --org com.flising.admin --project-name flising_admin .
           sed -i '/<application/i <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
-          
-          # Inject flutter_launcher_icons into pubspec.yaml so it is available on cloud build
-                    
-          echo '  flutter_launcher_icons: ^0.13.1' >> pubspec.yaml
+          sed -i 's/android:label="flising_admin"/android:label="Flising Admin"/g' android/app/src/main/AndroidManifest.xml
           flutter pub get
-          flutter pub run flutter_launcher_icons
-          flutter pub run flutter_launcher_icons
-          flutter pub run flutter_launcher_icons
+          dart run flutter_launcher_icons
           flutter build apk --release
           cp build/app/outputs/flutter-apk/app-release.apk Flising-Admin.apk
       - uses: actions/upload-artifact@v4
@@ -58,6 +53,7 @@ jobs:
           flutter config --enable-windows-desktop
           flutter create --platforms=windows --project-name flising_admin .
           flutter pub get
+          dart run flutter_launcher_icons
           flutter build windows --release
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath Flising-Admin-Windows.zip
       - uses: actions/upload-artifact@v4
