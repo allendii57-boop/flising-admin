@@ -412,6 +412,95 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
+  void _passengerDetailDialog(String? pId, Map<String, dynamic> activeRide) {
+    final uRaw = (pId != null && _passengers[pId] is Map) ? _passengers[pId] as Map : {};
+    final profile = (uRaw['profile'] is Map) ? uRaw['profile'] as Map : uRaw;
+    final name = (profile['fullName'] ?? profile['name'] ?? activeRide['passengerName'] ?? 'Passenger').toString();
+    final email = (profile['email'] ?? uRaw['email'] ?? pId ?? '—').toString();
+    final phone = (profile['phoneNumber'] ?? profile['phone'] ?? activeRide['passengerPhone'] ?? 'No phone').toString();
+    final photo = (profile['profileImageUrl'] ?? profile['photoUrl'] ?? '').toString();
+
+    final pRides = _rides.entries
+        .where((e) => e.value is Map && (pId != null ? (e.value as Map)['passengerId'] == pId : (e.value as Map)['passengerName'] == name))
+        .toList()
+      ..sort((a, b) => (((b.value as Map)['timestamp'] ?? 0) as num).compareTo(((a.value as Map)['timestamp'] ?? 0) as num));
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kSurface,
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: kOrange,
+              backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+              child: photo.isEmpty ? const Icon(Icons.person, color: Colors.white) : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text('🟢 ON ACTIVE TRIP', style: TextStyle(fontSize: 11, color: kGreen, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 440,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Phone: $phone\nEmail: $email', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: kOrange.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('CURRENT TRIP RECORD', style: TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('Pickup: ${activeRide["pickupText"] ?? "—"}', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                      Text('Dropoff: ${activeRide["dropoffText"] ?? "—"}', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                      Text('Fare: ${activeRide["fare"] ?? "—"}', style: const TextStyle(fontSize: 12, color: kGreen, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                const Divider(color: Colors.white12, height: 24),
+                Text('RIDE HISTORY (${pRides.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 6),
+                ...pRides.map((e) {
+                  final r = e.value as Map;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      '• [${_fmt(r["timestamp"])}] ${r["pickupText"] ?? ""} → ${r["dropoffText"] ?? ""} (${r["fare"] ?? ""}) - ${r["status"] ?? ""}',
+                      style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CLOSE')),
+        ],
+      ),
+    );
+  }
+
   Widget _mapTab() {
     final List<Marker> markers = [];
     _drivers.forEach((uid, val) {
@@ -454,8 +543,22 @@ class _AdminHomeState extends State<AdminHome> {
           width: 90,
           height: 50,
           child: GestureDetector(
-            onTap: () => setState(() => _tab = 4),
-            child: const Icon(Icons.person_pin_circle, color: kOrange, size: 34),
+            onTap: () => _passengerDetailDialog(rVal['passengerId']?.toString(), rVal.cast<String, dynamic>()),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: kOrange, borderRadius: BorderRadius.circular(6)),
+                  child: Text(
+                    (rVal['passengerName'] ?? 'Passenger').toString().split(' ').first,
+                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const Icon(Icons.person_pin_circle, color: kOrange, size: 30),
+              ],
+            ),
           ),
         ));
       }
