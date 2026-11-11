@@ -19,7 +19,18 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
   
+  android: true
+  ios: false
+  image_path: "assets/images/flising_admin.jpg"
+  adaptive_icon_background: "#0A0A0A"
+  adaptive_icon_foreground: "assets/images/flising_admin.jpg"
+  windows:
+    generate: true
+    image_path: "assets/images/flising_admin.jpg"
+    icon_size: 256
+
 flutter_launcher_icons:
   android: true
   ios: false
