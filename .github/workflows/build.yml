@@ -25,7 +25,12 @@ jobs:
         run: |
           flutter create --platforms=android --org com.flising.admin --project-name flising_admin .
           sed -i '/<application/i <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
+          
+          # Inject flutter_launcher_icons into pubspec.yaml so it is available on cloud build
+          echo "  flutter_launcher_icons: ^0.13.1" >> pubspec.yaml
+          
           flutter pub get
+          flutter pub run flutter_launcher_icons
           flutter pub run flutter_launcher_icons
           flutter build apk --release
           cp build/app/outputs/flutter-apk/app-release.apk Flising-Admin.apk
