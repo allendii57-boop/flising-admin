@@ -72,6 +72,71 @@ class _AdminHomeState extends State<AdminHome> {
     await _sync();
   }
 
+  Future<void> _purgeDriverCompletely(String uid) async {
+    final futures = <Future>[
+      http.delete(Uri.parse('$kDbUrl/drivers/$uid.json?auth=$_tok')),
+      http.delete(Uri.parse('$kDbUrl/users/drivers/$uid.json?auth=$_tok')),
+      http.patch(Uri.parse('$kDbUrl/deleted_accounts.json?auth=$_tok'), body: jsonEncode({uid: true})),
+    ];
+    for (final e in _rides.entries) {
+      if (e.value is Map && (e.value as Map)['assignedDriverId'] == uid) {
+        futures.add(http.delete(Uri.parse('$kDbUrl/rides/${e.key}.json?auth=$_tok')));
+        futures.add(http.delete(Uri.parse('$kDbUrl/chats/${e.key}.json?auth=$_tok')));
+      }
+    }
+    await Future.wait(futures);
+    await _sync();
+  }
+
+  Future<void> _purgePassengerCompletely(String uid) async {
+    final futures = <Future>[
+      http.delete(Uri.parse('$kDbUrl/users/passengers/$uid.json?auth=$_tok')),
+      http.delete(Uri.parse('$kDbUrl/passengers/$uid.json?auth=$_tok')),
+      http.patch(Uri.parse('$kDbUrl/deleted_accounts.json?auth=$_tok'), body: jsonEncode({uid: true})),
+    ];
+    for (final e in _rides.entries) {
+      if (e.value is Map && (e.value as Map)['passengerId'] == uid) {
+        futures.add(http.delete(Uri.parse('$kDbUrl/rides/${e.key}.json?auth=$_tok')));
+        futures.add(http.delete(Uri.parse('$kDbUrl/chats/${e.key}.json?auth=$_tok')));
+      }
+    }
+    await Future.wait(futures);
+    await _sync();
+  }
+
+  Future<void> _wipeAllRidesAndChats() async {
+    await Future.wait([
+      http.delete(Uri.parse('$kDbUrl/rides.json?auth=$_tok')),
+      http.delete(Uri.parse('$kDbUrl/chats.json?auth=$_tok')),
+    ]);
+    await _sync();
+  }
+
+  Future<void> _forceAllDriversOffline() async {
+    final futures = <Future>[];
+    for (final uid in _drivers.keys) {
+      futures.add(http.patch(Uri.parse('$kDbUrl/drivers/$uid.json?auth=$_tok'), body: jsonEncode({'isOnline': false})));
+    }
+    await Future.wait(futures);
+    await _sync();
+  }
+
+  Future<void> _factoryResetDatabase() async {
+    final tombstones = <String, dynamic>{};
+    for (final uid in _drivers.keys) tombstones[uid] = true;
+    for (final uid in _passengers.keys) tombstones[uid] = true;
+    await Future.wait([
+      if (tombstones.isNotEmpty)
+        http.patch(Uri.parse('$kDbUrl/deleted_accounts.json?auth=$_tok'), body: jsonEncode(tombstones)),
+      http.delete(Uri.parse('$kDbUrl/rides.json?auth=$_tok')),
+      http.delete(Uri.parse('$kDbUrl/chats.json?auth=$_tok')),
+      http.delete(Uri.parse('$kDbUrl/drivers.json?auth=$_tok')),
+      http.delete(Uri.parse('$kDbUrl/users.json?auth=$_tok')),
+      http.delete(Uri.parse('$kDbUrl/passengers.json?auth=$_tok')),
+    ]);
+    await _sync();
+  }
+
   double _fare(dynamic v) => double.tryParse((v ?? '').toString().replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
   String _fmt(dynamic ts) => ts is num ? DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.fromMillisecondsSinceEpoch(ts.toInt())) : 'No date';
 
@@ -254,6 +319,45 @@ class _AdminHomeState extends State<AdminHome> {
       _periodCard('2 WEEKS (LAST 14 DAYS)', p['w2']!),
       _periodCard('MONTHLY (LAST 30 DAYS)', p['m1']!),
       _periodCard('ALL-TIME TOTAL', p['total']!),
+      const SizedBox(height: 20),
+      const Text('FIREBASE DATABASE CONTROLS', style: TextStyle(color: kOrange, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1)),
+      const SizedBox(height: 10),
+      Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: kSurface2, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
+            icon: const Icon(Icons.power_settings_new, color: kOrange, size: 18),
+            label: const Text('FORCE ALL DRIVERS OFFLINE', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+            onPressed: () => _confirmAndDelete(
+              title: 'FORCE ALL DRIVERS OFFLINE',
+              targetName: 'all online driver sessions',
+              onVerifiedDelete: _forceAllDriversOffline,
+            ),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: kRed.withOpacity(0.85), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
+            icon: const Icon(Icons.cleaning_services_outlined, color: Colors.white, size: 18),
+            label: const Text('WIPE ALL RIDE HISTORIES', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+            onPressed: () => _confirmAndDelete(
+              title: 'WIPE ALL RIDES & CHATS',
+              targetName: 'ALL ride histories and earnings records',
+              onVerifiedDelete: _wipeAllRidesAndChats,
+            ),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: kRed, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
+            icon: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+            label: const Text('FACTORY RESET DATABASE', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+            onPressed: () => _confirmAndDelete(
+              title: 'FACTORY RESET ENTIRE DATABASE',
+              targetName: 'ALL drivers, passengers, rides, and chats',
+              onVerifiedDelete: _factoryResetDatabase,
+            ),
+          ),
+        ],
+      ),
     ]);
   }
 
@@ -298,7 +402,7 @@ class _AdminHomeState extends State<AdminHome> {
                   onPressed: () => _confirmAndDelete(
                     title: 'DELETE DRIVER',
                     targetName: name,
-                    onVerifiedDelete: () => _deleteNode('drivers/$uid'),
+                    onVerifiedDelete: () => _purgeDriverCompletely(uid),
                   ),
                 ),
               ],
@@ -335,7 +439,7 @@ class _AdminHomeState extends State<AdminHome> {
               icon: const Icon(Icons.delete_forever, color: kRed),
               onPressed: () {
                 Navigator.pop(ctx);
-                _confirmAndDelete(title: 'DELETE DRIVER', targetName: name, onVerifiedDelete: () => _deleteNode('drivers/$uid'));
+                _confirmAndDelete(title: 'DELETE DRIVER', targetName: name, onVerifiedDelete: () => _purgeDriverCompletely(uid));
               },
             ),
           ]),
@@ -576,31 +680,72 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _ridesTab() {
     final list = _rides.entries.where((e) => e.value is Map).toList()
       ..sort((a, b) => (((b.value as Map)['timestamp'] ?? 0) as num).compareTo(((a.value as Map)['timestamp'] ?? 0) as num));
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: list.length,
-      itemBuilder: (ctx, i) {
-        final id = list[i].key;
-        final r = (list[i].value as Map).cast<String, dynamic>();
-        final status = (r['status'] ?? '').toString();
-        final live = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].contains(status);
-        final pin = (r['deliveryPin'] ?? '').toString();
-        return Card(
-          color: kSurface,
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            title: Text('${r['pickupText'] ?? 'Pickup'} → ${r['dropoffText'] ?? 'Dropoff'} (${r['fare'] ?? ''})'),
-            subtitle: Text('${_fmt(r['timestamp'])} • $status • Passenger: ${r['passengerName'] ?? '—'}${pin.isNotEmpty ? " • PIN: $pin" : ""}'),
-            trailing: live
-                ? ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: kRed),
-                    onPressed: () => _patch('rides/$id', {'status': 'CANCELLED_BY_ADMIN'}),
-                    child: const Text('END', style: TextStyle(color: Colors.white)),
-                  )
-                : null,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('TOTAL TRIP RECORDS: ${list.length}', style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12)),
+              if (list.isNotEmpty)
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: kRed),
+                  icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 16),
+                  label: const Text('WIPE ALL RIDES', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: () => _confirmAndDelete(
+                    title: 'WIPE ALL RIDES',
+                    targetName: 'all ${list.length} ride records',
+                    onVerifiedDelete: _wipeAllRidesAndChats,
+                  ),
+                ),
+            ],
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: list.length,
+            itemBuilder: (ctx, i) {
+              final id = list[i].key;
+              final r = (list[i].value as Map).cast<String, dynamic>();
+              final status = (r['status'] ?? '').toString();
+              final live = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].contains(status);
+              final pin = (r['deliveryPin'] ?? '').toString();
+              return Card(
+                color: kSurface,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text('${r['pickupText'] ?? 'Pickup'} → ${r['dropoffText'] ?? 'Dropoff'} (${r['fare'] ?? ''})'),
+                  subtitle: Text('${_fmt(r['timestamp'])} • $status • Passenger: ${r['passengerName'] ?? '—'}${pin.isNotEmpty ? " • PIN: $pin" : ""}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (live)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: kOrange),
+                          onPressed: () => _patch('rides/$id', {'status': 'CANCELLED_BY_ADMIN'}),
+                          child: const Text('END', style: TextStyle(color: Colors.white, fontSize: 11)),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: kRed),
+                        onPressed: () => _confirmAndDelete(
+                          title: 'DELETE RIDE RECORD',
+                          targetName: '${r['pickupText'] ?? 'Ride'} → ${r['dropoffText'] ?? ''}',
+                          onVerifiedDelete: () async {
+                            await _deleteNode('rides/$id');
+                            await _deleteNode('chats/$id');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -661,10 +806,7 @@ class _AdminHomeState extends State<AdminHome> {
                 onPressed: () => _confirmAndDelete(
                   title: 'DELETE PASSENGER',
                   targetName: name,
-                  onVerifiedDelete: () async {
-                    await _deleteNode('users/passengers/$uid');
-                    await _deleteNode('passengers/$uid');
-                  },
+                  onVerifiedDelete: () => _purgePassengerCompletely(uid),
                 ),
               ),
             ]),
