@@ -29,7 +29,9 @@ jobs:
           # Inject flutter_launcher_icons into pubspec.yaml so it is available on cloud build
           echo "  flutter_launcher_icons: ^0.13.1" >> pubspec.yaml
           
+          echo '  flutter_launcher_icons: ^0.13.1' >> pubspec.yaml
           flutter pub get
+          flutter pub run flutter_launcher_icons
           flutter pub run flutter_launcher_icons
           flutter pub run flutter_launcher_icons
           flutter build apk --release
