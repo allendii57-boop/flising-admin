@@ -257,7 +257,23 @@ class _AdminHomeState extends State<AdminHome> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: kSurface,
-        title: const Text('FLISING ADMIN PORTAL', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+        title: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF0D1117),
+              ),
+              child: Center(
+                child: Text('F', style: TextStyle(color: kOrange, fontWeight: FontWeight.w900, fontSize: 18)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('FLISING ADMIN PORTAL', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+          ],
+        ),
         actions: [
           IconButton(icon: const Icon(Icons.refresh, color: kOrange), onPressed: _sync),
           IconButton(icon: const Icon(Icons.logout), onPressed: widget.onLogout),

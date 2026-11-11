@@ -263,7 +263,7 @@ class _AdminGateState extends State<AdminGate> {
               Container(
                 width: 360,
                 margin: const EdgeInsets.only(top: 42),
-                padding: const EdgeInsets.fromLTRB(28, 58, 28, 28),
+                padding: const EdgeInsets.fromLTRB(28, 64, 28, 28),
                 decoration: BoxDecoration(
                   color: kSurface,
                   borderRadius: BorderRadius.circular(16),
