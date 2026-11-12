@@ -27,6 +27,21 @@ jobs:
           sed -i '/<application/i <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
           sed -i 's/android:label="flising_admin"/android:label="Flising Admin"/g' android/app/src/main/AndroidManifest.xml
           flutter pub get
+          # Optional: Python script or command to ensure perfect icon padding if needed
+          # Ensure proper padding for launcher icon frame
+          python3 -c "
+import os
+from PIL import Image, ImageOps
+try:
+    img_path = 'assets/images/flising_admin.jpg'
+    if os.path.exists(img_path):
+        im = Image.open(img_path).convert('RGB')
+        # Add a clean 15% black/dark margin padding so it sits perfectly inside the squircle frame
+        im = ImageOps.expand(im, border=int(im.size[0] * 0.15), fill='#0D1117')
+        im.save(img_path)
+except Exception as e:
+    print('Padding note:', e)
+"
           dart run flutter_launcher_icons
           flutter build apk --release
           cp build/app/outputs/flutter-apk/app-release.apk Flising-Admin.apk
