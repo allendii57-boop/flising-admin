@@ -140,6 +140,52 @@ class _AdminHomeState extends State<AdminHome> {
   double _fare(dynamic v) => double.tryParse((v ?? '').toString().replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
   String _fmt(dynamic ts) => ts is num ? DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.fromMillisecondsSinceEpoch(ts.toInt())) : 'No date';
 
+  String _driverFullName(Map r) {
+    final direct = (r['driverName'] ?? '').toString().trim();
+    if (direct.isNotEmpty && direct != 'Flising Driver') return direct;
+    final dId = r['assignedDriverId']?.toString();
+    if (dId != null && _drivers[dId] is Map) {
+      final dMap = _drivers[dId] as Map;
+      final prof = dMap['profile'] is Map ? dMap['profile'] as Map : {};
+      final full = (prof['fullName'] ?? dMap['name'] ?? '').toString().trim();
+      if (full.isNotEmpty) return full;
+    }
+    return direct.isNotEmpty ? direct : 'Unassigned';
+  }
+
+  Widget _adminDocThumb(String label, String? url) {
+    final hasUrl = url != null && url.toString().trim().isNotEmpty;
+    return Expanded(
+      child: GestureDetector(
+        onTap: hasUrl ? () => launchUrl(Uri.parse(url.toString())) : null,
+        child: Container(
+          height: 86,
+          margin: const EdgeInsets.only(right: 6),
+          decoration: BoxDecoration(
+            color: kSurface2,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: hasUrl ? kOrange.withOpacity(0.6) : Colors.white12),
+            image: hasUrl ? DecorationImage(image: NetworkImage(url.toString()), fit: BoxFit.cover) : null,
+          ),
+          alignment: Alignment.bottomLeft,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: const BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(7)),
+            ),
+            child: Text(
+              hasUrl ? label : '$label (None)',
+              style: TextStyle(color: hasUrl ? Colors.white : Colors.white38, fontSize: 10, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _snack(String msg, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -391,6 +437,9 @@ class _AdminHomeState extends State<AdminHome> {
         final online = d['isOnline'] == true && verified;
         final name = (p['fullName'] ?? d['name'] ?? 'Driver').toString();
         final vType = (p['vehicleType'] ?? 'car').toString();
+          final carModel = (p['carModel'] ?? p['vehicleModel'] ?? '').toString();
+          final plate = (p['plateNumber'] ?? '').toString();
+          final carChanged = p['vehicleChangeSubmitted'] == true;
         final photo = (p['profileImageUrl'] ?? '').toString();
 
         return Card(
@@ -404,7 +453,7 @@ class _AdminHomeState extends State<AdminHome> {
               child: photo.isEmpty ? const Icon(Icons.person, color: Colors.white54) : null,
             ),
             title: Text('$name ${online ? "🟢 ONLINE" : ""}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${verified ? "✅ VERIFIED" : (pending ? "⏳ PENDING" : "❌ UNVERIFIED")} • $vType'),
+            subtitle: Text('${verified ? "✅ VERIFIED" : (pending ? "⏳ PENDING" : "❌ UNVERIFIED")} • $vType${carModel.isNotEmpty ? " • $carModel" : ""}${plate.isNotEmpty ? " ($plate)" : ""}${carChanged ? " • 🚗 CAR UPDATED" : ""}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -433,7 +482,7 @@ class _AdminHomeState extends State<AdminHome> {
     final p = (d['profile'] as Map?)?.cast<String, dynamic>() ?? {};
     final name = (p['fullName'] ?? d['name'] ?? 'Driver').toString();
     String vType = (p['vehicleType'] ?? 'car').toString().toLowerCase() == 'motorcycle' ? 'motorcycle' : 'car';
-    final modelC = TextEditingController(text: (p['vehicleModel'] ?? '').toString());
+    final modelC = TextEditingController(text: (p['carModel'] ?? p['vehicleModel'] ?? '').toString());
     final colorC = TextEditingController(text: (p['vehicleColor'] ?? '').toString());
     final plateC = TextEditingController(text: (p['plateNumber'] ?? '').toString());
     final phoneC = TextEditingController(text: (p['phoneNumber'] ?? p['phone'] ?? '').toString());
@@ -463,11 +512,12 @@ class _AdminHomeState extends State<AdminHome> {
             width: 500,
             child: SingleChildScrollView(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                Wrap(spacing: 8, children: [
-                  if (p['profileImageUrl'] != null) TextButton(onPressed: () => launchUrl(Uri.parse(p['profileImageUrl'])), child: const Text('Face')),
-                  if (p['licenseImageUrl'] != null) TextButton(onPressed: () => launchUrl(Uri.parse(p['licenseImageUrl'])), child: const Text('License')),
-                  if (p['vehicleImageUrl'] != null) TextButton(onPressed: () => launchUrl(Uri.parse(p['vehicleImageUrl'])), child: const Text('Vehicle')),
-                ]),
+                Row(children: [
+                    _adminDocThumb('Profile Photo', p['profileImageUrl']?.toString()),
+                    _adminDocThumb('Licence', p['licenseImageUrl']?.toString()),
+                    _adminDocThumb('Car Photo', p['vehicleImageUrl']?.toString()),
+                  ]),
+                  const SizedBox(height: 10),
                 _periodCard('WEEKLY (7 DAYS)', stats['w1']!),
                 _periodCard('2 WEEKS (14 DAYS)', stats['w2']!),
                 _periodCard('MONTHLY (30 DAYS)', stats['m1']!),
@@ -517,7 +567,9 @@ class _AdminHomeState extends State<AdminHome> {
                   'isVerified': true,
                   'pendingApproval': false,
                   'vehicleType': vType,
-                  'vehicleModel': modelC.text.trim(),
+                  'carModel': modelC.text.trim(),
+                    'vehicleModel': modelC.text.trim(),
+                    'vehicleChangeSubmitted': false,
                   'vehicleColor': colorC.text.trim(),
                   'plateNumber': plateC.text.trim(),
                   if (phoneC.text.trim().isNotEmpty) 'phoneNumber': phoneC.text.trim(),
@@ -605,7 +657,7 @@ class _AdminHomeState extends State<AdminHome> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                      '• [${_fmt(r["timestamp"])}] ${r["pickupText"] ?? ""} → ${r["dropoffText"] ?? ""} (${r["fare"] ?? ""}) - ${r["status"] ?? ""}',
+                      '• [${_fmt(r["timestamp"])}] ${r["pickupText"] ?? ""} → ${r["dropoffText"] ?? ""} (${r["fare"] ?? ""}) • Driver: ${_driverFullName(r)} - ${r["status"] ?? ""}',
                       style: const TextStyle(fontSize: 11, color: Colors.white70),
                     ),
                   );
@@ -733,7 +785,7 @@ class _AdminHomeState extends State<AdminHome> {
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   title: Text('${r['pickupText'] ?? 'Pickup'} → ${r['dropoffText'] ?? 'Dropoff'} (${r['fare'] ?? ''})'),
-                  subtitle: Text('${_fmt(r['timestamp'])} • $status • Passenger: ${r['passengerName'] ?? '—'}${pin.isNotEmpty ? " • PIN: $pin" : ""}'),
+                  subtitle: Text('${_fmt(r['timestamp'])} • $status • Driver: ${_driverFullName(r)} • Passenger: ${r['passengerName'] ?? '—'}${pin.isNotEmpty ? " • PIN: $pin" : ""}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -797,7 +849,7 @@ class _AdminHomeState extends State<AdminHome> {
                       final r = e.value as Map;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 6),
-                        child: Text('• [${_fmt(r['timestamp'])}] ${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''} (${r['fare'] ?? ''}) - ${r['status'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                        child: Text('• [${_fmt(r['timestamp'])}] ${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''} (${r['fare'] ?? ''}) • Driver: ${_driverFullName(r)} - ${r['status'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
                       );
                     }),
                   ]),
