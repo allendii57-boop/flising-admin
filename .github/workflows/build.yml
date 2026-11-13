@@ -30,7 +30,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y python3-pil
           python3 pad_admin_icon.py
           dart run flutter_launcher_icons
-          flutter build apk --release
+          flutter build apk --release --no-tree-shake-icons
           cp build/app/outputs/flutter-apk/app-release.apk Flising-Admin.apk
       - uses: actions/upload-artifact@v4
         with:
