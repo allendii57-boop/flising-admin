@@ -828,54 +828,6 @@ class _AdminHomeState extends State<AdminHome> {
     final b64 = (u['profileImageBase64'] ?? '').toString();
     ImageProvider? img;
     if (b64.isNotEmpty) {
-      try {
-        img = MemoryImage(base64Decode(b64));
-      } catch (_) {}
-    } else if (url.isNotEmpty) {
-      img = NetworkImage(url);
-    }
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: kOrange, width: 2),
-      ),
-      child: CircleAvatar(
-        radius: radius,
-        backgroundColor: kSurface2,
-        backgroundImage: img,
-        child: img == null
-            ? Text(
-                name.isNotEmpty ? name[0].toUpperCase() : 'P',
-                style: TextStyle(color: kOrange, fontWeight: FontWeight.bold, fontSize: radius * 0.8),
-              )
-            : null,
-      ),
-    );
-  }
-
-  Widget _passengerAvatar(Map<String, dynamic> u, String name, {double radius = 24}) {
-    final url = (u['profileImageUrl'] ?? u['photoUrl'] ?? '').toString();
-    final b64 = (u['profileImageBase64'] ?? '').toString();
-    ImageProvider? img;
-    if (b64.isNotEmpty) {
-      try { img = MemoryImage(base64Decode(b64)); } catch (_) {}
-    } else if (url.isNotEmpty) {
-      img = NetworkImage(url);
-    }
-    return Container(
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: kOrange, width: 2)),
-      child: CircleAvatar(
-        radius: radius, backgroundColor: kSurface2, backgroundImage: img,
-        child: img == null ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'P', style: TextStyle(color: kOrange, fontWeight: FontWeight.bold, fontSize: radius * 0.8)) : null,
-      ),
-    );
-  }
-
-  Widget _passengerAvatar(Map<String, dynamic> u, String name, {double radius = 24}) {
-    final url = (u['profileImageUrl'] ?? u['photoUrl'] ?? '').toString();
-    final b64 = (u['profileImageBase64'] ?? '').toString();
-    ImageProvider? img;
-    if (b64.isNotEmpty) {
       try { img = MemoryImage(base64Decode(b64)); } catch (_) {}
     } else if (url.isNotEmpty) {
       img = NetworkImage(url);
@@ -942,11 +894,11 @@ class _AdminHomeState extends State<AdminHome> {
                         const SizedBox(height: 4),
                         Text('Joined: $regDate', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 4),
-                        Text('Completed Rides: $completedCount / ${pRides.length} total', style: const TextStyle(color: kGreen, fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text('Completed Rides: $completedCount / \${pRides.length} total', style: const TextStyle(color: kGreen, fontSize: 12, fontWeight: FontWeight.bold)),
                       ]),
                     ),
                     const Divider(color: Colors.white12, height: 20),
-                    Text('RIDE HISTORY (${pRides.length})', style: const TextStyle(color: kOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text('RIDE HISTORY (\${pRides.length})', style: const TextStyle(color: kOrange, fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     ...pRides.map((e) {
                       final r = e.value as Map;
@@ -956,11 +908,11 @@ class _AdminHomeState extends State<AdminHome> {
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                             Text(_fmt(r['timestamp']), style: const TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.bold)),
-                            Text('${r['fare'] ?? 'K 0.00'} • ${r['status'] ?? ''}', style: const TextStyle(color: kGreen, fontSize: 11, fontWeight: FontWeight.bold)),
+                            Text('\${r['fare'] ?? 'K 0.00'} • \${r['status'] ?? ''}', style: const TextStyle(color: kGreen, fontSize: 11, fontWeight: FontWeight.bold)),
                           ]),
                           const SizedBox(height: 4),
-                          Text('${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                          Text('Driver: ${_driverFullName(r)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                          Text('\${r['pickupText'] ?? ''} → \${r['dropoffText'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text('Driver: \${_driverFullName(r)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
                         ]),
                       );
                     }),
@@ -978,7 +930,7 @@ class _AdminHomeState extends State<AdminHome> {
             onTap: openModal,
             leading: _passengerAvatar(u, name, radius: 22),
             title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('$email • $phone (${pRides.length} rides)'),
+            subtitle: Text('$email • $phone (\${pRides.length} rides)'),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: kOrange), onPressed: openModal, child: const Text('PROFILE', style: TextStyle(color: Colors.white, fontSize: 11))),
               IconButton(
@@ -1026,8 +978,8 @@ class _AdminHomeState extends State<AdminHome> {
           color: kSurface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isPending ? kOrange : Colors.white10)),
           child: ListTile(
-            title: Text('$dName • Gross: K ${e.value.toStringAsFixed(2)}${isPending ? " (PENDING)" : ""}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Driver 90%: K ${(e.value * 0.9).toStringAsFixed(2)} | Flising Share 10%: K ${(e.value * 0.1).toStringAsFixed(2)}'),
+            title: Text('$dName • Gross: K \${e.value.toStringAsFixed(2)}\${isPending ? " (PENDING)" : ""}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Driver 90%: K \${(e.value * 0.9).toStringAsFixed(2)} | Flising Share 10%: K \${(e.value * 0.1).toStringAsFixed(2)}'),
             trailing: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: isPending ? kGreen : kOrange),
               onPressed: () async {
