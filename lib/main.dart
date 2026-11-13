@@ -28,28 +28,16 @@ const List<String> kMasterAdminEmails = [
 class FlisingPinLogo extends StatelessWidget {
   final double size;
   const FlisingPinLogo({super.key, this.size = 84});
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
+      width: size, height: size,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF0D1117),
+        shape: BoxShape.circle, color: const Color(0xFF0D1117),
         border: Border.all(color: kOrange, width: 2.5),
-        boxShadow: [
-          BoxShadow(color: kOrange.withOpacity(0.45), blurRadius: 24, spreadRadius: 2),
-        ],
+        boxShadow: [BoxShadow(color: kOrange.withOpacity(0.45), blurRadius: 24, spreadRadius: 2)],
       ),
-      child: ClipOval(
-        child: Image.asset(
-          'assets/images/flising_admin.jpg',
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-        ),
-      ),
+      child: ClipOval(child: Image.asset('assets/images/flising_admin.jpg', width: size, height: size, fit: BoxFit.cover)),
     );
   }
 }

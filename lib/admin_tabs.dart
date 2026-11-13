@@ -853,6 +853,24 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
+  Widget _passengerAvatar(Map<String, dynamic> u, String name, {double radius = 24}) {
+    final url = (u['profileImageUrl'] ?? u['photoUrl'] ?? '').toString();
+    final b64 = (u['profileImageBase64'] ?? '').toString();
+    ImageProvider? img;
+    if (b64.isNotEmpty) {
+      try { img = MemoryImage(base64Decode(b64)); } catch (_) {}
+    } else if (url.isNotEmpty) {
+      img = NetworkImage(url);
+    }
+    return Container(
+      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: kOrange, width: 2)),
+      child: CircleAvatar(
+        radius: radius, backgroundColor: kSurface2, backgroundImage: img,
+        child: img == null ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'P', style: TextStyle(color: kOrange, fontWeight: FontWeight.bold, fontSize: radius * 0.8)) : null,
+      ),
+    );
+  }
+
   Widget _usersTab() {
     final list = _passengers.entries.where((e) => e.value is Map).toList();
     return ListView.builder(
@@ -865,10 +883,7 @@ class _AdminHomeState extends State<AdminHome> {
         final email = (u['email'] ?? uid).toString();
         final phone = (u['phoneNumber'] ?? u['phone'] ?? 'No phone').toString();
         final regDate = u['registeredAt'] != null ? _fmt(u['registeredAt']) : 'Registered Member';
-        final isVer = u['isVerified'] != false;
-        final pRides = _rides.entries
-            .where((e) => e.value is Map && (e.value as Map)['passengerId'] == uid)
-            .toList()
+        final pRides = _rides.entries.where((e) => e.value is Map && (e.value as Map)['passengerId'] == uid).toList()
           ..sort((a, b) => (((b.value as Map)['timestamp'] ?? 0) as num).compareTo(((a.value as Map)['timestamp'] ?? 0) as num));
         final completedCount = pRides.where((e) => (e.value as Map)['status'] == 'COMPLETED').length;
 
@@ -877,195 +892,80 @@ class _AdminHomeState extends State<AdminHome> {
             context: context,
             builder: (ctx) => AlertDialog(
               backgroundColor: kSurface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-                side: BorderSide(color: kOrange.withOpacity(0.4), width: 1.2),
-              ),
-              titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-              title: Row(
-                children: [
-                  _passengerAvatar(u, name, radius: 30),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: (isVer ? kGreen : kOrange).withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: isVer ? kGreen : kOrange, width: 0.8),
-                          ),
-                          child: Text(
-                            isVer ? 'VERIFIED PASSENGER' : 'PASSENGER RECORD',
-                            style: TextStyle(color: isVer ? kGreen : kOrange, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: kOrange.withOpacity(0.4))),
+              title: Row(children: [
+                _passengerAvatar(u, name, radius: 28),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: kGreen.withOpacity(0.18), borderRadius: BorderRadius.circular(6), border: Border.all(color: kGreen)),
+                    child: const Text('VERIFIED PASSENGER', style: TextStyle(color: kGreen, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
-                ],
-              ),
+                ])),
+              ]),
               content: SizedBox(
-                width: 440,
+                width: 420,
                 child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: kSurface2,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('REGISTRATION RECORD', style: TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                            const SizedBox(height: 8),
-                            Row(children: [
-                              const Icon(Icons.badge_outlined, color: Colors.white54, size: 15),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text('Full Name: $name', style: const TextStyle(color: Colors.white, fontSize: 13))),
-                            ]),
-                            const SizedBox(height: 6),
-                            Row(children: [
-                              const Icon(Icons.email_outlined, color: Colors.white54, size: 15),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text('Email: $email', style: const TextStyle(color: Colors.white70, fontSize: 13))),
-                            ]),
-                            const SizedBox(height: 6),
-                            Row(children: [
-                              const Icon(Icons.phone_outlined, color: Colors.white54, size: 15),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text('Phone: $phone', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600))),
-                            ]),
-                            const SizedBox(height: 6),
-                            Row(children: [
-                              const Icon(Icons.calendar_today_outlined, color: Colors.white54, size: 15),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text('Joined: $regDate', style: const TextStyle(color: Colors.white70, fontSize: 12))),
-                            ]),
-                            const SizedBox(height: 6),
-                            Row(children: [
-                              const Icon(Icons.fingerprint, color: Colors.white54, size: 15),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text('Record ID: $uid', style: const TextStyle(color: Colors.white38, fontSize: 11))),
-                            ]),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                              decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(10)),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('COMPLETED TRIPS', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 2),
-                                  Text('$completedCount', style: const TextStyle(color: kGreen, fontSize: 18, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                              decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(10)),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('TOTAL BOOKINGS', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 2),
-                                  Text('${pRides.length}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(color: Colors.white12, height: 22),
-                      Text('RIDE HISTORY (${pRides.length})', style: const TextStyle(color: kOrange, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
-                      const SizedBox(height: 8),
-                      if (pRides.isEmpty)
-                        const Text('No trips recorded yet.', style: TextStyle(color: Colors.white38, fontSize: 12))
-                      else
-                        ...pRides.map((e) {
-                          final r = e.value as Map;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: kSurface2,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.white10),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(_fmt(r['timestamp']), style: const TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.bold)),
-                                    Text('${r['fare'] ?? 'K 0.00'} • ${r['status'] ?? ''}', style: const TextStyle(color: kGreen, fontSize: 11, fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text('${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 2),
-                                Text('Driver: ${_driverFullName(r)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                              ],
-                            ),
-                          );
-                        }),
-                    ],
-                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: double.infinity, padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white10)),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('REGISTRATION RECORD', style: TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        Text('Full Name: $name', style: const TextStyle(color: Colors.white, fontSize: 13)),
+                        const SizedBox(height: 4),
+                        Text('Email: $email', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text('Phone: $phone', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Joined: $regDate', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text('Completed Rides: $completedCount / ${pRides.length} total', style: const TextStyle(color: kGreen, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ]),
+                    ),
+                    const Divider(color: Colors.white12, height: 20),
+                    Text('RIDE HISTORY (${pRides.length})', style: const TextStyle(color: kOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    ...pRides.map((e) {
+                      final r = e.value as Map;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white10)),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            Text(_fmt(r['timestamp']), style: const TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.bold)),
+                            Text('${r['fare'] ?? 'K 0.00'} • ${r['status'] ?? ''}', style: const TextStyle(color: kGreen, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ]),
+                          const SizedBox(height: 4),
+                          Text('${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text('Driver: ${_driverFullName(r)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                        ]),
+                      );
+                    }),
+                  ]),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('CLOSE', style: TextStyle(color: kOrange, fontWeight: FontWeight.bold)),
-                ),
-              ],
+              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CLOSE', style: TextStyle(color: kOrange, fontWeight: FontWeight.bold)))],
             ),
           );
         }
 
         return Card(
-          color: kSurface,
-          margin: const EdgeInsets.only(bottom: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Colors.white10)),
+          color: kSurface, margin: const EdgeInsets.only(bottom: 10),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             onTap: openModal,
             leading: _passengerAvatar(u, name, radius: 22),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            subtitle: Text('$email • $phone (${pRides.length} rides)', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('$email • $phone (${pRides.length} rides)'),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: kOrange),
-                onPressed: openModal,
-                child: const Text('PROFILE', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
+              ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: kOrange), onPressed: openModal, child: const Text('PROFILE', style: TextStyle(color: Colors.white, fontSize: 11))),
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: kRed),
-                onPressed: () => _confirmAndDelete(
-                  title: 'DELETE PASSENGER',
-                  targetName: name,
-                  onVerifiedDelete: () => _purgePassengerCompletely(uid),
-                ),
+                onPressed: () => _confirmAndDelete(title: 'DELETE PASSENGER', targetName: name, onVerifiedDelete: () => _purgePassengerCompletely(uid)),
               ),
             ]),
           ),
@@ -1087,9 +987,7 @@ class _AdminHomeState extends State<AdminHome> {
         final dId = r['assignedDriverId'].toString();
         unsettled[dId] = (unsettled[dId] ?? 0) + _fare(r['fare']);
         rideIds.putIfAbsent(dId, () => []).add(e.key);
-        if (r['payoutStatus'] == 'PENDING_SETTLEMENT') {
-          submittedMap[dId] = true;
-        }
+        if (r['payoutStatus'] == 'PENDING_SETTLEMENT') submittedMap[dId] = true;
       }
     }
     return ListView(padding: const EdgeInsets.all(16), children: [
@@ -1103,42 +1001,24 @@ class _AdminHomeState extends State<AdminHome> {
       const SizedBox(height: 16),
       const Text('UNSETTLED DRIVER WALLETS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
       const SizedBox(height: 8),
-      if (unsettled.isEmpty)
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Text('All driver wallets are settled (K 0.00).', style: TextStyle(color: Colors.white54)),
-        ),
       ...unsettled.entries.map((e) {
         final dName = (_drivers[e.key] is Map && _drivers[e.key]['profile'] is Map) ? (_drivers[e.key]['profile']['fullName'] ?? e.key) : e.key;
         final isPending = submittedMap[e.key] == true;
         return Card(
           color: kSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: isPending ? kOrange : Colors.white10, width: isPending ? 1.5 : 1),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isPending ? kOrange : Colors.white10)),
           child: ListTile(
-            title: Row(
-              children: [
-                Expanded(child: Text('$dName • Gross: K ${e.value.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold))),
-                if (isPending)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: kOrange.withOpacity(0.2), borderRadius: BorderRadius.circular(6), border: Border.all(color: kOrange)),
-                    child: const Text('PENDING SETTLEMENT', style: TextStyle(color: kOrange, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
-              ],
-            ),
-            subtitle: Text('Driver 90%: K ${(e.value * 0.9).toStringAsFixed(2)} | Flising Share (10%): K ${(e.value * 0.1).toStringAsFixed(2)}'),
+            title: Text('$dName • Gross: K ${e.value.toStringAsFixed(2)}${isPending ? " (PENDING)" : ""}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Driver 90%: K ${(e.value * 0.9).toStringAsFixed(2)} | Flising Share 10%: K ${(e.value * 0.1).toStringAsFixed(2)}'),
             trailing: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: isPending ? kGreen : kOrange),
               onPressed: () async {
                 for (final id in rideIds[e.key]!) {
                   await _patch('rides/$id', {'payoutStatus': 'PAID'});
                 }
-                _snack('Settled Flising Share for $dName! Both reset to K 0.00.');
+                _snack('Settled payouts for $dName!');
               },
-              child: const Text('SETTLE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('SETTLE', style: TextStyle(color: Colors.white)),
             ),
           ),
         );
