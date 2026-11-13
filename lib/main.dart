@@ -36,73 +36,22 @@ class FlisingPinLogo extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: const Color(0xFF0D1117),
+        border: Border.all(color: kOrange, width: 2.5),
         boxShadow: [
           BoxShadow(color: kOrange.withOpacity(0.45), blurRadius: 24, spreadRadius: 2),
         ],
       ),
-      child: CustomPaint(
-        size: Size(size, size),
-        painter: _PinLogoPainter(),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/flising_admin.jpg',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
       ),
     );
   }
-}
-
-class _PinLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // Teardrop Pin Path
-    final pinPath = Path()
-      ..moveTo(w * 0.5, h * 0.95)
-      ..cubicTo(w * 0.22, h * 0.68, w * 0.14, h * 0.48, w * 0.14, h * 0.36)
-      ..arcToPoint(
-        Offset(w * 0.86, h * 0.36),
-        radius: Radius.circular(w * 0.36),
-        clockwise: true,
-      )
-      ..cubicTo(w * 0.86, h * 0.48, w * 0.78, h * 0.68, w * 0.5, h * 0.95)
-      ..close();
-
-    // Dark Navy/Black Fill
-    final fillPaint = Paint()
-      ..color = const Color(0xFF0D1117)
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(pinPath, fillPaint);
-
-    // Glowing Orange Rim
-    final borderPaint = Paint()
-      ..color = kOrange
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.03;
-    canvas.drawPath(pinPath, borderPaint);
-
-    // Stylized White 'F' inside the pin
-    final fPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final upperF = Path()
-      ..moveTo(w * 0.38, h * 0.64)
-      ..lineTo(w * 0.38, h * 0.46)
-      ..quadraticBezierTo(w * 0.39, h * 0.32, w * 0.66, h * 0.23)
-      ..quadraticBezierTo(w * 0.60, h * 0.34, w * 0.47, h * 0.41)
-      ..quadraticBezierTo(w * 0.45, h * 0.45, w * 0.45, h * 0.64)
-      ..close();
-    canvas.drawPath(upperF, fPaint);
-
-    final midF = Path()
-      ..moveTo(w * 0.48, h * 0.50)
-      ..quadraticBezierTo(w * 0.52, h * 0.42, w * 0.64, h * 0.38)
-      ..quadraticBezierTo(w * 0.60, h * 0.48, w * 0.48, h * 0.50)
-      ..close();
-    canvas.drawPath(midF, fPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class FlisingAdminApp extends StatelessWidget {
