@@ -871,6 +871,24 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
+  Widget _passengerAvatar(Map<String, dynamic> u, String name, {double radius = 24}) {
+    final url = (u['profileImageUrl'] ?? u['photoUrl'] ?? '').toString();
+    final b64 = (u['profileImageBase64'] ?? '').toString();
+    ImageProvider? img;
+    if (b64.isNotEmpty) {
+      try { img = MemoryImage(base64Decode(b64)); } catch (_) {}
+    } else if (url.isNotEmpty) {
+      img = NetworkImage(url);
+    }
+    return Container(
+      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: kOrange, width: 2)),
+      child: CircleAvatar(
+        radius: radius, backgroundColor: kSurface2, backgroundImage: img,
+        child: img == null ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'P', style: TextStyle(color: kOrange, fontWeight: FontWeight.bold, fontSize: radius * 0.8)) : null,
+      ),
+    );
+  }
+
   Widget _usersTab() {
     final list = _passengers.entries.where((e) => e.value is Map).toList();
     return ListView.builder(
