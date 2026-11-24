@@ -697,11 +697,26 @@ class _AdminHomeState extends State<AdminHome> {
                 const SizedBox(height: 6),
                 ...pRides.map((e) {
                   final r = e.value as Map;
+                  final rt = (r['rating'] is num) ? (r['rating'] as num).toInt() : 0;
+                  final rc = (r['ratingComment'] ?? '').toString().trim();
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      '• [${_fmt(r["timestamp"])}] ${r["pickupText"] ?? ""} → ${r["dropoffText"] ?? ""} (${r["fare"] ?? ""}) • Driver: ${_driverFullName(r)} - ${r["status"] ?? ""}',
-                      style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• [${_fmt(r["timestamp"])}] ${r["pickupText"] ?? ""} → ${r["dropoffText"] ?? ""} (${r["fare"] ?? ""}) • Driver: ${_driverFullName(r)} - ${r["status"] ?? ""}',
+                          style: const TextStyle(fontSize: 11, color: Colors.white70),
+                        ),
+                        if (rt > 0 || rc.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10, top: 2),
+                            child: Text(
+                              '${rt > 0 ? "⭐ $rt/5" : ""}${rt > 0 && rc.isNotEmpty ? " — " : ""}${rc.isNotEmpty ? "\"$rc\"" : ""}',
+                              style: const TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                      ],
                     ),
                   );
                 }),
@@ -954,6 +969,8 @@ class _AdminHomeState extends State<AdminHome> {
                     const SizedBox(height: 8),
                     ...pRides.map((e) {
                       final r = e.value as Map;
+                      final rt = (r['rating'] is num) ? (r['rating'] as num).toInt() : 0;
+                      final rc = (r['ratingComment'] ?? '').toString().trim();
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white10)),
@@ -965,6 +982,14 @@ class _AdminHomeState extends State<AdminHome> {
                           const SizedBox(height: 4),
                           Text('${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                           Text('Driver: ${_driverFullName(r)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                          if (rt > 0 || rc.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${rt > 0 ? "⭐ $rt/5" : ""}${rt > 0 && rc.isNotEmpty ? " — " : ""}${rc.isNotEmpty ? "\"$rc\"" : ""}',
+                                style: const TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.w500),
+                              ),
+                            ),
                         ]),
                       );
                     }),
