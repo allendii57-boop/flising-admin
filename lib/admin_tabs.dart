@@ -554,7 +554,7 @@ class _AdminHomeState extends State<AdminHome> {
                 Row(children: [
                   Expanded(child: ChoiceChip(label: const Text('Car (K6.70)'), selected: vType == 'car', selectedColor: kOrange, onSelected: (_) => setSt(() => vType = 'car'))),
                   const SizedBox(width: 8),
-                  Expanded(child: ChoiceChip(label: const Text('Bike (K5.50)'), selected: vType == 'motorcycle', selectedColor: kOrange, onSelected: (_) => setSt(() => vType = 'motorcycle'))),
+                  Expanded(child: ChoiceChip(label: const Text('Bike (K6.00)'), selected: vType == 'motorcycle', selectedColor: kOrange, onSelected: (_) => setSt(() => vType = 'motorcycle'))),
                 ]),
                 const SizedBox(height: 8),
                 TextField(controller: modelC, decoration: const InputDecoration(labelText: 'Make & Model', filled: true, fillColor: kSurface2)),
@@ -571,9 +571,24 @@ class _AdminHomeState extends State<AdminHome> {
                 const SizedBox(height: 6),
                 ...driverRides.map((e) {
                   final r = e.value as Map;
+                  final rt = (r['rating'] is num) ? (r['rating'] as num).toInt() : 0;
+                  final rc = (r['ratingComment'] ?? '').toString().trim();
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: Text('• [${_fmt(r['timestamp'])}] ${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''} (${r['fare'] ?? ''}) - ${r['status'] ?? ''}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        child: Text('• [${_fmt(r['timestamp'])}] ${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''} (${r['fare'] ?? ''}) - ${r['status'] ?? ''}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                        if (rt > 0 || rc.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10, top: 2),
+                            child: Text(
+                              '${rt > 0 ? "⭐ $rt/5" : ""}${rt > 0 && rc.isNotEmpty ? " — " : ""}${rc.isNotEmpty ? "\"$rc\"" : ""}',
+                              style: const TextStyle(color: kOrange, fontSize: 11, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 }),
               ]),
