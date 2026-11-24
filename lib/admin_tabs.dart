@@ -429,6 +429,20 @@ class _AdminHomeState extends State<AdminHome> {
     ]);
   }
 
+  Map<String, dynamic> _driverRatingStats(String uid) {
+    int count = 0;
+    double sum = 0;
+    for (final e in _rides.entries) {
+      if (e.value is! Map) continue;
+      final r = e.value as Map;
+      if (r['assignedDriverId'] == uid && r['rating'] is num && (r['rating'] as num) > 0) {
+        sum += (r['rating'] as num).toDouble();
+        count++;
+      }
+    }
+    return {'count': count, 'avg': count > 0 ? sum / count : 0.0};
+  }
+
   Widget _driversTab() {
     final entries = _drivers.entries.where((e) => e.value is Map).toList();
     return ListView.builder(
@@ -447,6 +461,10 @@ class _AdminHomeState extends State<AdminHome> {
           final plate = (p['plateNumber'] ?? '').toString();
           final carChanged = p['vehicleChangeSubmitted'] == true;
         final photo = (p['profileImageUrl'] ?? '').toString();
+        final rStats = _driverRatingStats(uid);
+        final rCount = rStats['count'] as int;
+        final rAvg = rStats['avg'] as double;
+        final ratingBadge = rCount > 0 ? ' • ⭐ ${rAvg.toStringAsFixed(1)} ($rCount)' : ' • ⭐ New';
 
         return Card(
           color: kSurface,
@@ -459,7 +477,7 @@ class _AdminHomeState extends State<AdminHome> {
               child: photo.isEmpty ? const Icon(Icons.person, color: Colors.white54) : null,
             ),
             title: Text('$name ${online ? "🟢 ONLINE" : ""}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${verified ? "✅ VERIFIED" : (pending ? "⏳ PENDING" : "❌ UNVERIFIED")} • $vType${carModel.isNotEmpty ? " • $carModel" : ""}${plate.isNotEmpty ? " ($plate)" : ""}${carChanged ? " • 🚗 CAR UPDATED" : ""}'),
+            subtitle: Text('${verified ? "✅ VERIFIED" : (pending ? "⏳ PENDING" : "❌ UNVERIFIED")} • $vType${carModel.isNotEmpty ? " • $carModel" : ""}${plate.isNotEmpty ? " ($plate)" : ""}${carChanged ? " • 🚗 CAR UPDATED" : ""}$ratingBadge'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -498,6 +516,10 @@ class _AdminHomeState extends State<AdminHome> {
         .toList()
       ..sort((a, b) => (((b.value as Map)['timestamp'] ?? 0) as num).compareTo(((a.value as Map)['timestamp'] ?? 0) as num));
     final stats = _calcPeriods(driverRides.map((e) => e.value as Map));
+    final rStats = _driverRatingStats(uid);
+    final rCount = rStats['count'] as int;
+    final rAvg = rStats['avg'] as double;
+    final ratingLabel = rCount > 0 ? '  ⭐ ${rAvg.toStringAsFixed(1)} ($rCount)' : '';
 
     showDialog(
       context: context,
@@ -505,7 +527,7 @@ class _AdminHomeState extends State<AdminHome> {
         builder: (ctx, setSt) => AlertDialog(
           backgroundColor: kSurface,
           title: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Expanded(child: Text(name)),
+            Expanded(child: Text('$name$ratingLabel')),
             IconButton(
               icon: const Icon(Icons.delete_forever, color: kRed),
               onPressed: () {
@@ -786,12 +808,27 @@ class _AdminHomeState extends State<AdminHome> {
               final status = (r['status'] ?? '').toString();
               final live = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].contains(status);
               final pin = (r['deliveryPin'] ?? '').toString();
+              final rating = (r['rating'] is num) ? (r['rating'] as num).toInt() : 0;
+              final ratingComment = (r['ratingComment'] ?? '').toString().trim();
               return Card(
                 color: kSurface,
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   title: Text('${r['pickupText'] ?? 'Pickup'} → ${r['dropoffText'] ?? 'Dropoff'} (${r['fare'] ?? ''})'),
-                  subtitle: Text('${_fmt(r['timestamp'])} • $status • Driver: ${_driverFullName(r)} • Passenger: ${r['passengerName'] ?? '—'}${pin.isNotEmpty ? " • PIN: $pin" : ""}'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${_fmt(r['timestamp'])} • $status • Driver: ${_driverFullName(r)} • Passenger: ${r['passengerName'] ?? '—'}${pin.isNotEmpty ? " • PIN: $pin" : ""}'),
+                      if (rating > 0 || ratingComment.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '${rating > 0 ? "⭐ $rating/5" : ""}${rating > 0 && ratingComment.isNotEmpty ? " — " : ""}${ratingComment.isNotEmpty ? "\"$ratingComment\"" : ""}',
+                            style: const TextStyle(color: kOrange, fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                    ],
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
