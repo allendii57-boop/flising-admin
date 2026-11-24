@@ -578,7 +578,7 @@ class _AdminHomeState extends State<AdminHome> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        child: Text('• [${_fmt(r['timestamp'])}] ${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''} (${r['fare'] ?? ''}) - ${r['status'] ?? ''}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                        Text('• [${_fmt(r['timestamp'])}] ${r['pickupText'] ?? ''} → ${r['dropoffText'] ?? ''} (${r['fare'] ?? ''}) - ${r['status'] ?? ''}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
                         if (rt > 0 || rc.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(left: 10, top: 2),
